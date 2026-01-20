@@ -1,0 +1,65 @@
+{
+  "metrics": {
+    "train_mae": 31.05,
+    "test_mae": 83.56,
+    "train_r2": 0.968,
+    "test_r2": 0.849
+  },
+  "feature_columns": [
+    "repo_size_mb",
+    "num_files",
+    "test_count",
+    "dependencies",
+    "cpu_cores",
+    "memory_gb",
+    "cache_hit_rate",
+    "hour",
+    "day_of_week",
+    "branch_encoded",
+    "resource_score",
+    "complexity_score"
+  ],
+  "feature_importance": [
+    {
+      "feature": "repo_size_mb",
+      "importance": 0.7194718554494149
+    },
+    {
+      "feature": "complexity_score",
+      "importance": 0.14730158222825693
+    },
+    {
+      "feature": "cache_hit_rate",
+      "importance": 0.039242935463615576
+    },
+    {
+      "feature": "resource_score",
+      "importance": 0.0309785903173508
+    },
+    {
+      "feature": "test_count",
+      "importance": 0.030854871620671596
+    },
+    {
+      "feature": "num_files",
+      "importance": 0.0077071976825141665
+    },
+    {
+      "feature": "branch_encoded",
+      "importance": 0.007690549660231304
+    },
+    {
+      "feature": "hour",
+      "importance": 0.0049814376672998
+    },
+    {
+      "feature": "cpu_cores",
+      "importance": 0.0036031596535406863
+    },
+    {
+      "feature": "dependencies",
+      "importance": 0.0033295071101834875
+    }
+  ],
+  "training_date": "2026-01-20T13:38:03.662599"
+}
