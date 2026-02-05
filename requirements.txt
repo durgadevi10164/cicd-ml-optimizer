@@ -10,3 +10,5 @@ requests>=2.31.0
 jupyter>=1.0.0
 notebook>=7.0.3
 python-dotenv>=1.0.0
+openai==2.16.0
+python-dotenv==1.2.1
