@@ -12,3 +12,4 @@ notebook>=7.0.3
 python-dotenv>=1.0.0
 openai==2.16.0
 python-dotenv==1.2.1
+google-generativeai

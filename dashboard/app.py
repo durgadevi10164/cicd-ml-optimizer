@@ -7,7 +7,7 @@ from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 import sys
 import os
-import openai
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 # Add parent directory to path
@@ -20,9 +20,9 @@ import json
 app = Flask(__name__)
 CORS(app)
 
-# Load environment variables and setup OpenAI
+# Load environment variables and setup Gemini
 load_dotenv()
-openai.api_key = os.getenv('OPENAI_API_KEY')
+genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
 # Load model metadata
 with open('models/metadata.json') as f:
@@ -106,8 +106,7 @@ def api_stats():
             'avg_build_time': float(df['build_time_minutes'].mean()),
             'avg_cost': float(df['cost_usd'].mean()),
             'total_cost': float(df['cost_usd'].sum()),
-            'by_branch': df.groupby('branch_type').agg({
-                'build_time_minutes': 'mean',
+            'by_branch': df.groupby('branch_type').agg({                'build_time_minutes': 'mean',
                 'cost_usd': 'mean'
             }).round(2).to_dict()
         }
@@ -121,70 +120,39 @@ def api_stats():
             'success': False,
             'error': str(e)
         }), 400
-
 @app.route('/api/chat', methods=['POST'])
 def chat_with_ai():
-    """Chat with AI about build optimization"""
+    """Chat with AI about build optimization - MOCK VERSION (No API needed)"""
     try:
         data = request.json
-        user_message = data.get('message', '')
+        user_message = data.get('message', '').lower()
         build_context = data.get('context', {})
-        conversation_history = data.get('history', [])
         
-        # Create context about the user's build
-        context_prompt = f"""
-You are an expert CI/CD build optimization assistant. Help users understand their build performance.
-
-CURRENT BUILD CONFIGURATION:
-- Repository Size: {build_context.get('repo_size_mb', 'N/A')} MB
-- Number of Files: {build_context.get('num_files', 'N/A')}
-- Test Count: {build_context.get('test_count', 'N/A')}
-- Dependencies: {build_context.get('dependencies', 'N/A')}
-- Branch Type: {build_context.get('branch_type', 'N/A')}
-- Cache Hit Rate: {build_context.get('cache_hit_rate', 'N/A')}
-- Current Resources: {build_context.get('cpu_cores', 'N/A')} cores / {build_context.get('memory_gb', 'N/A')} GB
-
-RECOMMENDATION GIVEN:
-- Recommended Resources: {build_context.get('recommended_cpu', 'N/A')} cores / {build_context.get('recommended_memory', 'N/A')} GB
-- Predicted Build Time: {build_context.get('predicted_time', 'N/A')} minutes
-- Estimated Cost: ${build_context.get('estimated_cost', 'N/A')}
-- Savings: {build_context.get('savings_percent', 'N/A')}%
-
-Your job:
-1. Answer questions about WHY the build is slow/expensive
-2. Explain the optimization recommendations
-3. Provide actionable tips to improve performance
-4. Be specific and reference the actual numbers above
-5. Keep responses concise (3-4 sentences max unless asked for details)
-
-Be friendly, technical, and helpful!
-"""
+        # Smart rule-based responses (works without any API!)
+        if 'why' in user_message and ('long' in user_message or 'slow' in user_message or 'time' in user_message):
+            response = f"Your build takes {build_context.get('predicted_time', 'N/A')} minutes due to several factors:\n\n1. **Large repository**: {build_context.get('repo_size_mb', 'N/A')}MB with {build_context.get('num_files', 'N/A')} files\n2. **Test suite**: {build_context.get('test_count', 'N/A')} tests to run\n3. **Cache efficiency**: Only {build_context.get('cache_hit_rate', 'N/A')} cache hit rate means many dependencies are re-downloaded\n4. **Dependencies**: {build_context.get('dependencies', 'N/A')} packages to install\n\nTo speed it up: improve caching, run tests in parallel, and use the recommended {build_context.get('recommended_cpu', 'N/A')} cores configuration."
         
-        # Build messages for OpenAI
-        messages = [
-            {"role": "system", "content": context_prompt}
-        ]
+        elif 'cost' in user_message and 'high' in user_message:
+            response = f"The cost is ${build_context.get('estimated_cost', 'N/A')} because you're using {build_context.get('cpu_cores', 'N/A')} CPU cores and {build_context.get('memory_gb', 'N/A')}GB RAM - which is over-provisioned for your needs.\n\nYour {build_context.get('branch_type', 'N/A')} branch doesn't need that much power! By switching to our recommended {build_context.get('recommended_cpu', 'N/A')} cores and {build_context.get('recommended_memory', 'N/A')}GB RAM, you'll save approximately {build_context.get('savings_percent', 'N/A')}% per build while maintaining good performance."
         
-        # Add conversation history
-        for msg in conversation_history:
-            messages.append(msg)
+        elif 'reduce' in user_message or 'improve' in user_message or 'faster' in user_message or 'optimize' in user_message:
+            response = f"Here are the top 4 ways to reduce your {build_context.get('predicted_time', 'N/A')} minute build time:\n\n1. **Boost cache hit rate** from {build_context.get('cache_hit_rate', 'N/A')} to 0.8+ by caching dependencies properly\n2. **Right-size resources**: Use {build_context.get('recommended_cpu', 'N/A')} cores and {build_context.get('recommended_memory', 'N/A')}GB RAM (optimal balance)\n3. **Parallel testing**: Run your {build_context.get('test_count', 'N/A')} tests in parallel instead of sequentially\n4. **Split test suites**: Break large test suites into smaller, faster chunks\n\nThese changes could cut your build time in half!"
         
-        # Add current user message
-        messages.append({"role": "user", "content": user_message})
+        elif '2 cores' in user_message or '4 cores' in user_message or 'recommend' in user_message:
+            response = f"I recommended **{build_context.get('recommended_cpu', 'N/A')} cores and {build_context.get('recommended_memory', 'N/A')}GB RAM** because:\n\n✅ **Cost-efficient**: ${build_context.get('estimated_cost', 'N/A')} per build (saves {build_context.get('savings_percent', 'N/A')}%)\n✅ **Right-sized**: Perfect for {build_context.get('branch_type', 'N/A')} branch with {build_context.get('repo_size_mb', 'N/A')}MB repo\n✅ **Build time**: Completes in ~{build_context.get('predicted_time', 'N/A')} minutes\n\nHigher specs won't make your build much faster, but they'll cost significantly more. This is the sweet spot!"
         
-        # Call OpenAI API
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=messages,
-            max_tokens=400,
-            temperature=0.7
-        )
+        elif 'cache' in user_message:
+            response = f"Your current cache hit rate is **{build_context.get('cache_hit_rate', 'N/A')}**, which means you're re-downloading dependencies too often.\n\n**How to improve caching:**\n1. Cache dependency directories (node_modules, pip packages)\n2. Use lock files (package-lock.json, requirements.txt)\n3. Cache build artifacts between stages\n4. Enable incremental builds\n\nGood caching (0.8+) can reduce build times by 30-50%!"
         
-        ai_response = response.choices[0].message.content
+        elif 'test' in user_message:
+            response = f"With **{build_context.get('test_count', 'N/A')} tests**, parallelization is crucial! Split tests into groups and run concurrently. This can reduce test time from hours to minutes!"
+        
+        else:
+            response = f"I've analyzed your **{build_context.get('repo_size_mb', 'N/A')}MB repository** with {build_context.get('test_count', 'N/A')} tests.\n\n**My recommendation:** {build_context.get('recommended_cpu', 'N/A')} cores and {build_context.get('recommended_memory', 'N/A')}GB RAM\n**Build time:** ~{build_context.get('predicted_time', 'N/A')} minutes\n**Cost:** ${build_context.get('estimated_cost', 'N/A')}\n**Savings:** {build_context.get('savings_percent', 'N/A')}%\n\nAsk me: Why is my build time so long? How can I reduce costs?"
         
         return jsonify({
             'success': True,
-            'response': ai_response
+            'response': response
         })
         
     except Exception as e:
@@ -192,7 +160,7 @@ Be friendly, technical, and helpful!
             'success': False,
             'error': str(e)
         }), 400
-
+       
 if __name__ == '__main__':
     print("\n" + "="*60)
     print("🚀 CI/CD ML Optimizer Dashboard Starting...")
@@ -201,7 +169,8 @@ if __name__ == '__main__':
     print(f"   Test R²: {metadata['metrics']['test_r2']}")
     print(f"   Test MAE: {metadata['metrics']['test_mae']} minutes")
     print(f"\n🌐 Dashboard URL: http://localhost:5000")
-    print(f"\n🤖 AI Chat: Enabled (OpenAI GPT-3.5)")
+    print(f"\n🤖 AI Chat: Enabled (Smart Rule-Based Assistant)")
     print("\n⚡ Press Ctrl+C to stop\n")
     
     app.run(debug=True, host='0.0.0.0', port=5000)
+
