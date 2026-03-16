@@ -1,392 +1,329 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CI/CD Pipeline Optimizer</title>
+    <title>CI/CD Optimizer with AI</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
+        .container { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
         
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        /* Main Panel */
+        .main-panel { background: white; border-radius: 15px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        h1 { color: #333; margin-bottom: 10px; }
+        .subtitle { color: #666; margin-bottom: 30px; }
         
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
-        }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; }
+        .tab { padding: 12px 24px; background: none; border: none; cursor: pointer; font-size: 15px; color: #666; transition: all 0.3s; }
+        .tab.active { color: #667eea; border-bottom: 3px solid #667eea; font-weight: 600; }
+        .tab:hover { color: #667eea; }
         
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
         
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-        
-        .main-content {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #e0e0e0;
-        }
-        
-        .tab {
-            padding: 15px 30px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-            color: #666;
-            transition: all 0.3s;
-            border-bottom: 3px solid transparent;
-        }
-        
-        .tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-            font-weight: 600;
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        .input-group {
-            margin-bottom: 25px;
-        }
-        
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-        }
-        
-        .input-group input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 15px;
+        input, select { 
+            width: 100%; 
+            padding: 12px 15px; 
+            margin: 8px 0; 
+            border: 2px solid #e0e0e0; 
+            border-radius: 8px; 
+            font-size: 14px;
             transition: border-color 0.3s;
         }
+        input:focus { outline: none; border-color: #667eea; }
         
-        .input-group input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        .input-hint {
-            font-size: 13px;
-            color: #888;
-            margin-top: 5px;
-        }
-        
-        .btn {
-            padding: 15px 40px;
+        button { 
+            width: 100%; 
+            padding: 14px; 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s;
-            width: 100%;
         }
+        button:hover { transform: translateY(-2px); }
+        button:active { transform: translateY(0); }
         
-        .btn:hover {
-            transform: translateY(-2px);
+        .loading { text-align: center; padding: 30px; display: none; }
+        .loading.active { display: block; }
+        .spinner { 
+            border: 4px solid #f3f3f3; 
+            border-top: 4px solid #667eea; 
+            border-radius: 50%; 
+            width: 40px; 
+            height: 40px; 
+            animation: spin 1s linear infinite; 
+            margin: 0 auto 15px;
         }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 20px;
-            display: none;
-        }
-        
-        .loading.active {
-            display: block;
-        }
-        
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .results {
-            display: none;
-            margin-top: 30px;
-        }
-        
-        .results.active {
-            display: block;
-        }
-        
+        /* Repository Info Section - NEW! */
         .repo-info {
+            display: none;
             background: #f8f9fa;
             padding: 20px;
             border-radius: 10px;
-            margin-bottom: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
         }
-        
+        .repo-info.active { display: block; }
         .repo-info h3 {
             color: #333;
             margin-bottom: 15px;
+            font-size: 18px;
         }
-        
-        .info-grid {
+        .repo-info-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
         }
-        
         .info-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px;
             background: white;
+            padding: 12px;
             border-radius: 6px;
+            border: 1px solid #dee2e6;
         }
-        
         .info-label {
-            color: #666;
-            font-size: 14px;
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 4px;
         }
-        
         .info-value {
-            color: #333;
+            font-size: 16px;
             font-weight: 600;
+            color: #212529;
         }
         
-        .recommendation {
-            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-            padding: 30px;
-            border-radius: 10px;
-            border-left: 5px solid #667eea;
-        }
+        .results { display: none; margin-top: 30px; }
+        .results.active { display: block; }
         
-        .recommendation h3 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.5em;
+        .metrics { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 15px; 
+            margin: 20px 0;
         }
-        
-        .config-card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .config-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
-        
-        .metric {
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
+        .metric { 
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px; 
+            border-radius: 10px; 
             text-align: center;
+            border: 2px solid #dee2e6;
         }
+        .metric-value { font-size: 28px; font-weight: 700; color: #667eea; margin: 5px 0; }
+        .metric-label { font-size: 13px; color: #666; }
+        .metric-unit { font-size: 14px; color: #888; }
         
-        .metric-label {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 5px;
+        /* Chatbot Panel */
+        .chatbot-panel { 
+            background: white; 
+            border-radius: 15px; 
+            padding: 0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            max-height: 800px;
         }
-        
-        .metric-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: #667eea;
+        .chat-header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            padding: 20px; 
+            border-radius: 15px 15px 0 0;
         }
+        .chat-header h2 { font-size: 20px; margin-bottom: 5px; }
+        .chat-subtitle { font-size: 13px; opacity: 0.9; }
         
-        .metric-unit {
-            font-size: 14px;
-            color: #888;
+        .chat-messages { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 20px;
+            max-height: 500px;
         }
-        
-        .success-rate {
-            display: inline-block;
-            padding: 5px 15px;
-            background: #10b981;
-            color: white;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
+        .message { 
+            margin-bottom: 15px; 
+            padding: 12px 16px; 
+            border-radius: 12px; 
+            max-width: 85%;
+            line-height: 1.5;
         }
-        
-        .error {
-            background: #fee;
-            color: #c33;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            display: none;
+        .message.user { 
+            background: #667eea; 
+            color: white; 
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
         }
+        .message.bot { 
+            background: #f0f0f0; 
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+        .message.bot strong { color: #667eea; }
         
-        .error.active {
+        .quick-questions {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+        }
+        .quick-q-title { font-size: 12px; color: #888; margin-bottom: 10px; }
+        .quick-btn {
             display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #495057;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+        }
+        .quick-btn:hover { background: #e9ecef; border-color: #667eea; color: #667eea; }
+        
+        .chat-input-area { 
+            padding: 20px; 
+            border-top: 1px solid #eee;
+            background: #fafafa;
+        }
+        .chat-input-box { 
+            display: flex; 
+            gap: 10px;
+        }
+        .chat-input-box input { 
+            flex: 1; 
+            margin: 0;
+        }
+        .chat-input-box button { 
+            width: auto; 
+            padding: 12px 24px;
+        }
+        
+        @media (max-width: 1200px) {
+            .container { grid-template-columns: 1fr; }
+            .metrics { grid-template-columns: repeat(2, 1fr); }
+            .repo-info-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
+        <!-- Main Panel -->
+        <div class="main-panel">
             <h1>🚀 CI/CD Pipeline Optimizer</h1>
-            <p>ML-Powered Resource Optimization for Faster, Cheaper Builds</p>
-        </div>
-        
-        <div class="main-content">
+            <p class="subtitle">ML-Powered Resource Optimization with AI Assistant</p>
+            
             <div class="tabs">
-                <button class="tab active" onclick="switchTab('github')">
-                    🔗 GitHub Analysis
-                </button>
-                <button class="tab" onclick="switchTab('manual')">
-                    ✍️ Manual Input
-                </button>
+                <button class="tab active" onclick="switchTab('github')">🔗 GitHub Analysis</button>
+                <button class="tab" onclick="switchTab('manual')">✍️ Manual Input</button>
             </div>
             
-            <!-- GitHub Tab -->
             <div id="github-tab" class="tab-content active">
-                <div class="input-group">
-                    <label>GitHub Repository URL</label>
-                    <input 
-                        type="text" 
-                        id="github-url" 
-                        placeholder="https://github.com/facebook/react"
-                    >
-                    <div class="input-hint">
-                        Paste any public GitHub repository URL
-                    </div>
-                </div>
-                
-                <button class="btn" onclick="analyzeGithub()">
-                    🔍 Analyze & Optimize
-                </button>
+                <label>GitHub Repository URL:</label>
+                <input type="text" id="github-url" placeholder="https://github.com/facebook/react">
+                <button onclick="analyzeGithub()">🔍 Analyze & Optimize</button>
             </div>
             
-            <!-- Manual Tab -->
             <div id="manual-tab" class="tab-content">
-                <div class="input-group">
-                    <label>Repository Size (MB)</label>
-                    <input type="number" id="repo-size" value="1000" min="10">
-                </div>
-                
-                <div class="input-group">
-                    <label>Number of Files</label>
-                    <input type="number" id="num-files" value="500" min="1">
-                </div>
-                
-                <div class="input-group">
-                    <label>Number of Dependencies</label>
-                    <input type="number" id="num-deps" value="150" min="0">
-                </div>
-                
-                <div class="input-group">
-                    <label>Number of Tests</label>
-                    <input type="number" id="test-count" value="100" min="0">
-                </div>
-                
-                <button class="btn" onclick="optimizeManual()">
-                    🎯 Get Recommendation
-                </button>
+                <label>Repository Size (MB):</label>
+                <input type="number" id="repo-size" value="1000">
+                <label>Number of Files:</label>
+                <input type="number" id="num-files" value="500">
+                <label>Dependencies:</label>
+                <input type="number" id="num-deps" value="150">
+                <label>Test Count:</label>
+                <input type="number" id="test-count" value="100">
+                <button onclick="optimizeManual()">🎯 Get Recommendation</button>
             </div>
             
-            <!-- Loading -->
             <div id="loading" class="loading">
                 <div class="spinner"></div>
                 <p>Analyzing repository and optimizing configuration...</p>
             </div>
             
-            <!-- Error -->
-            <div id="error" class="error"></div>
-            
-            <!-- Results -->
-            <div id="results" class="results">
-                <!-- Repo Info (only for GitHub) -->
-                <div id="repo-info" class="repo-info" style="display: none;">
-                    <h3>📊 Repository Information</h3>
-                    <div class="info-grid" id="repo-info-grid"></div>
+            <!-- Repository Info Section - NEW! -->
+            <div id="repo-info" class="repo-info">
+                <h3>📊 Repository Information</h3>
+                <div class="repo-info-grid" id="repo-info-grid">
+                    <!-- Will be populated dynamically -->
                 </div>
-                
-                <!-- Recommendation -->
-                <div class="recommendation">
-                    <h3>🎯 Recommended Configuration</h3>
-                    
-                    <div class="config-card">
-                        <div class="config-grid">
-                            <div class="metric">
-                                <div class="metric-label">CPU Cores</div>
-                                <div class="metric-value" id="cpu-value">-</div>
-                            </div>
-                            <div class="metric">
-                                <div class="metric-label">Memory</div>
-                                <div class="metric-value" id="mem-value">-</div>
-                                <div class="metric-unit">GB</div>
-                            </div>
-                            <div class="metric">
-                                <div class="metric-label">Build Duration</div>
-                                <div class="metric-value" id="duration-value">-</div>
-                                <div class="metric-unit">min</div>
-                            </div>
-                            <div class="metric">
-                                <div class="metric-label">Estimated Cost</div>
-                                <div class="metric-value" id="cost-value">-</div>
-                                <div class="metric-unit">USD</div>
-                            </div>
-                        </div>
-                        
-                        <div style="margin-top: 20px; text-align: center;">
-                            <span class="metric-label">Success Probability: </span>
-                            <span class="success-rate" id="success-rate">-</span>
-                        </div>
+            </div>
+            
+            <div id="results" class="results">
+                <h2 style="margin-bottom: 20px;">🎯 Recommended Configuration</h2>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-label">CPU Cores</div>
+                        <div class="metric-value" id="cpu">-</div>
                     </div>
+                    <div class="metric">
+                        <div class="metric-label">Memory</div>
+                        <div class="metric-value" id="mem">-</div>
+                        <div class="metric-unit">GB</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Build Time</div>
+                        <div class="metric-value" id="duration">-</div>
+                        <div class="metric-unit">min</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Cost</div>
+                        <div class="metric-value" id="cost">-</div>
+                        <div class="metric-unit">USD</div>
+                    </div>
+                </div>
+                <p style="text-align: center; color: #666; margin-top: 20px;">
+                    💬 <strong>Ask the AI assistant</strong> about this recommendation →
+                </p>
+            </div>
+        </div>
+        
+        <!-- Chatbot Panel -->
+        <div class="chatbot-panel">
+            <div class="chat-header">
+                <h2>🤖 AI Assistant</h2>
+                <p class="chat-subtitle">Ask me about your build configuration</p>
+            </div>
+            
+            <div class="chat-messages" id="chat-messages">
+                <div class="message bot">
+                    👋 Hi! I'm your CI/CD optimization assistant. Analyze a repository, then ask me questions like:
+                    <br><br>
+                    • "Why is my build time high?"<br>
+                    • "How can I reduce costs?"<br>
+                    • "Why 8 CPU cores?"<br>
+                    • "Show me alternatives"
+                </div>
+            </div>
+            
+            <div class="quick-questions" id="quick-questions" style="display: none;">
+                <div class="quick-q-title">💡 Quick Questions:</div>
+                <button class="quick-btn" onclick="askQuestion('Why is my build time high?')">
+                    ⏱️ Why is my build time high?
+                </button>
+                <button class="quick-btn" onclick="askQuestion('How can I reduce costs?')">
+                    💰 How can I reduce costs?
+                </button>
+                <button class="quick-btn" onclick="askQuestion('Why did you recommend these specs?')">
+                    ⚙️ Why these specs?
+                </button>
+            </div>
+            
+            <div class="chat-input-area">
+                <div class="chat-input-box">
+                    <input 
+                        type="text" 
+                        id="chat-input" 
+                        placeholder="Ask me anything about the build..."
+                        onkeypress="if(event.key==='Enter') sendMessage()"
+                    >
+                    <button onclick="sendMessage()">Send</button>
                 </div>
             </div>
         </div>
@@ -394,120 +331,82 @@
     
     <script>
         function switchTab(tab) {
-            // Update tab buttons
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
-            
-            // Update tab content
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.getElementById(tab + '-tab').classList.add('active');
-            
-            // Hide results
-            hideResults();
         }
         
-        function showLoading() {
+        async function analyzeGithub() {
+            const url = document.getElementById('github-url').value;
+            if (!url) return alert('Please enter a GitHub URL');
+            
             document.getElementById('loading').classList.add('active');
-            document.getElementById('error').classList.remove('active');
-            hideResults();
-        }
-        
-        function hideLoading() {
-            document.getElementById('loading').classList.remove('active');
-        }
-        
-        function showError(message) {
-            const errorDiv = document.getElementById('error');
-            errorDiv.textContent = message;
-            errorDiv.classList.add('active');
-            hideLoading();
-        }
-        
-        function hideResults() {
             document.getElementById('results').classList.remove('active');
-            document.getElementById('repo-info').style.display = 'none';
-        }
-        
-        function showResults(data, showRepoInfo = false) {
-            hideLoading();
+            document.getElementById('repo-info').classList.remove('active');
             
-            const recommended = data.recommended;
-            
-            // Update metrics
-            document.getElementById('cpu-value').textContent = recommended.cpu_cores;
-            document.getElementById('mem-value').textContent = recommended.memory_gb;
-            document.getElementById('duration-value').textContent = recommended.predicted_duration_min.toFixed(1);
-            document.getElementById('cost-value').textContent = '$' + recommended.estimated_cost_usd.toFixed(3);
-            document.getElementById('success-rate').textContent = recommended.success_probability.toFixed(1) + '%';
-            
-            document.getElementById('results').classList.add('active');
-            
-            if (showRepoInfo) {
-                document.getElementById('repo-info').style.display = 'block';
+            try {
+                const res = await fetch('/api/analyze-github', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({github_url: url})
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    // Show repository info
+                    displayRepoInfo(data.repo_info);
+                    
+                    // Show recommendations
+                    showResults(data.recommendation.recommended);
+                    
+                    addBotMessage("✅ Analysis complete! I've analyzed the repository and generated recommendations. What would you like to know?");
+                    document.getElementById('quick-questions').style.display = 'block';
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
             }
+            
+            document.getElementById('loading').classList.remove('active');
         }
         
         function displayRepoInfo(info) {
             const grid = document.getElementById('repo-info-grid');
             grid.innerHTML = `
                 <div class="info-item">
-                    <span class="info-label">Repository</span>
-                    <span class="info-value">${info.repo_name}</span>
+                    <div class="info-label">Repository</div>
+                    <div class="info-value">${info.repo_name}</div>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Size</span>
-                    <span class="info-value">${info.repo_size_mb.toFixed(1)} MB</span>
+                    <div class="info-label">Size</div>
+                    <div class="info-value">${info.repo_size_mb.toFixed(1)} MB</div>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Files</span>
-                    <span class="info-value">${info.num_files.toLocaleString()}</span>
+                    <div class="info-label">Primary Language</div>
+                    <div class="info-value">${info.primary_language}</div>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Dependencies</span>
-                    <span class="info-value">${info.num_dependencies}</span>
+                    <div class="info-label">Files</div>
+                    <div class="info-value">${info.num_files.toLocaleString()}</div>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Language</span>
-                    <span class="info-value">${info.primary_language}</span>
+                    <div class="info-label">Dependencies</div>
+                    <div class="info-value">${info.num_dependencies}</div>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Stars</span>
-                    <span class="info-value">${info.stars.toLocaleString()}</span>
+                    <div class="info-label">Stars</div>
+                    <div class="info-value">⭐ ${info.stars.toLocaleString()}</div>
                 </div>
             `;
-        }
-        
-        async function analyzeGithub() {
-            const url = document.getElementById('github-url').value.trim();
-            
-            if (!url) {
-                showError('Please enter a GitHub repository URL');
-                return;
-            }
-            
-            showLoading();
-            
-            try {
-                const response = await fetch('/api/analyze-github', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ github_url: url })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    displayRepoInfo(result.repo_info);
-                    showResults(result.recommendation, true);
-                } else {
-                    showError(result.error || 'Failed to analyze repository');
-                }
-            } catch (error) {
-                showError('Network error: ' + error.message);
-            }
+            document.getElementById('repo-info').classList.add('active');
         }
         
         async function optimizeManual() {
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('repo-info').classList.remove('active');
+            
             const data = {
                 repo_size: parseInt(document.getElementById('repo-size').value),
                 num_files: parseInt(document.getElementById('num-files').value),
@@ -515,31 +414,80 @@
                 test_count: parseInt(document.getElementById('test-count').value)
             };
             
-            showLoading();
-            
             try {
-                const response = await fetch('/api/optimize-manual', {
+                const res = await fetch('/api/optimize-manual', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(data)
                 });
-                
-                const result = await response.json();
+                const result = await res.json();
                 
                 if (result.success) {
-                    showResults(result.data, false);
-                } else {
-                    showError(result.error || 'Optimization failed');
+                    showResults(result.data.recommended);
+                    addBotMessage("✅ Optimization complete! Ask me anything about these recommendations.");
+                    document.getElementById('quick-questions').style.display = 'block';
                 }
-            } catch (error) {
-                showError('Network error: ' + error.message);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+            
+            document.getElementById('loading').classList.remove('active');
+        }
+        
+        function showResults(rec) {
+            document.getElementById('cpu').textContent = rec.cpu_cores;
+            document.getElementById('mem').textContent = rec.memory_gb;
+            document.getElementById('duration').textContent = rec.predicted_duration_min.toFixed(1);
+            document.getElementById('cost').textContent = '$' + rec.estimated_cost_usd.toFixed(3);
+            document.getElementById('results').classList.add('active');
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            addUserMessage(message);
+            input.value = '';
+            
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: message})
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    addBotMessage(data.response);
+                }
+            } catch (e) {
+                addBotMessage('Sorry, I encountered an error. Please try again.');
             }
         }
         
-        // Allow Enter key to submit
-        document.getElementById('github-url').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') analyzeGithub();
-        });
+        function askQuestion(question) {
+            document.getElementById('chat-input').value = question;
+            sendMessage();
+        }
+        
+        function addUserMessage(text) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message user';
+            msgDiv.textContent = text;
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        function addBotMessage(text) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message bot';
+            msgDiv.innerHTML = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
     </script>
 </body>
 </html>
