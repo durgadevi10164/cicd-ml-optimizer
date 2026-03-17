@@ -108,7 +108,6 @@ def chat():
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 400
-
 def generate_chatbot_response(user_message, context):
     """Generate context-aware responses"""
     
@@ -220,6 +219,79 @@ def generate_chatbot_response(user_message, context):
 - Success: ~98%
 
 Which matters more to you: speed, cost, or reliability?"""
+
+    elif 'less' in msg and ('ram' in msg or 'memory' in msg):
+        current_ram = rec['memory_gb']
+        less_ram = max(current_ram // 2, 4)
+        time_increase = rec['predicted_duration_min'] * 0.15
+        return f"""If you use **{less_ram}GB RAM** instead of {current_ram}GB:
+
+**Risks:**
+⚠️ **Out of Memory errors** - Your {ml_input['num_files']:,} files need adequate RAM
+⚠️ **Success rate drops** to ~75% (vs current {rec['success_probability']:.1f}%)
+⚠️ **Build may fail** randomly during peak memory usage
+⚠️ **Slower builds** - May add ~{time_increase:.1f} minutes due to swapping
+
+**Benefits:**
+💰 Save ~$0.08-0.12 per build
+💰 Monthly savings: ~$8-12 (for 100 builds)
+
+**My Recommendation:** 
+Stick with {current_ram}GB RAM. The cost savings aren't worth the reliability risk for your project size."""
+
+    elif 'affect' in msg and 'success' in msg:
+        return f"""**Success rate ({rec['success_probability']:.1f}%) depends on:**
+
+**1. Memory Allocation** ⭐⭐⭐ (Most Important)
+- Current: {rec['memory_gb']}GB RAM
+- Your repo size ({ml_input['repo_size_mb']}MB) + {ml_input['num_files']:,} files need this
+- **Too little RAM** = Out of Memory crashes
+- **Adequate RAM** = Stable builds
+
+**2. CPU Resources** ⭐⭐
+- Current: {rec['cpu_cores']} cores
+- Affects parallel compilation and test execution
+- **Too few cores** = Timeouts on large projects
+- **Right cores** = Smooth parallel processing
+
+**3. Repository Complexity** ⭐⭐
+- Files: {ml_input['num_files']:,}
+- Dependencies: {ml_input['num_dependencies']}
+- Tests: ~{ml_input['test_count']}
+- **More complex** = needs more resources for stability
+
+**4. Build Process Type** ⭐
+- Compilation-heavy projects need more CPU
+- Test-heavy projects need more memory
+- Your project falls in the balanced category
+
+**Bottom Line:** Your recommended config ({rec['cpu_cores']} cores, {rec['memory_gb']}GB) gives you {rec['success_probability']:.1f}% success - a solid, reliable setup!"""
+
+    elif ('4' in msg or 'four' in msg) and ('core' in msg or 'cpu' in msg):
+        faster_time = rec['predicted_duration_min'] * 0.65
+        slower_time = rec['predicted_duration_min'] * 1.4
+        cheaper_cost = rec['estimated_cost_usd'] * 0.6
+        return f"""**Configuration Comparison:**
+
+**4 CPU Cores (Budget Option)**
+- Build Time: ~{slower_time:.1f} min (+40%)
+- Cost: ${cheaper_cost:.3f} (-40%)
+- Success Rate: ~80%
+- Best For: Non-critical builds
+
+**{rec['cpu_cores']} CPU Cores (Recommended)** ✅
+- Build Time: {rec['predicted_duration_min']:.1f} min
+- Cost: ${rec['estimated_cost_usd']:.3f}
+- Success Rate: {rec['success_probability']:.1f}%
+- Best For: Your project size
+
+**16 CPU Cores (Performance)**
+- Build Time: ~{faster_time:.1f} min (-35%)
+- Cost: ${rec['estimated_cost_usd'] * 1.8:.3f} (+80%)
+- Success Rate: ~96%
+- Best For: Time-critical deployments
+
+**Which matters more:** ⚡ Speed or 💰 Cost?"""
 
     elif 'help' in msg or 'what can you' in msg or 'questions' in msg:
         return """I can answer questions like:

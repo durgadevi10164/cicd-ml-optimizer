@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>CI/CD Optimizer with AI</title>
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -64,7 +66,7 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Repository Info Section - NEW! */
+        /* Repository Info Section */
         .repo-info {
             display: none;
             background: #f8f9fa;
@@ -121,6 +123,22 @@
         .metric-label { font-size: 13px; color: #666; }
         .metric-unit { font-size: 14px; color: #888; }
         
+        /* Chart Container */
+        .chart-container {
+            margin-top: 30px;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #dee2e6;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .chart-container h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 18px;
+            text-align: center;
+        }
+        
         /* Chatbot Panel */
         .chatbot-panel { 
             background: white; 
@@ -169,6 +187,8 @@
         .quick-questions {
             padding: 15px 20px;
             border-top: 1px solid #eee;
+            max-height: 280px;
+            overflow-y: auto;
         }
         .quick-q-title { font-size: 12px; color: #888; margin-bottom: 10px; }
         .quick-btn {
@@ -185,7 +205,7 @@
             text-align: left;
             transition: all 0.2s;
         }
-        .quick-btn:hover { background: #e9ecef; border-color: #667eea; color: #667eea; }
+        .quick-btn:hover { background: #e9ecef; border-color: #667eea; color: #667eea; transform: translateX(4px); }
         
         .chat-input-area { 
             padding: 20px; 
@@ -247,11 +267,11 @@
                 <p>Analyzing repository and optimizing configuration...</p>
             </div>
             
-            <!-- Repository Info Section - NEW! -->
+            <!-- Repository Info Section -->
             <div id="repo-info" class="repo-info">
                 <h3>📊 Repository Information</h3>
                 <div class="repo-info-grid" id="repo-info-grid">
-                    <!-- Will be populated dynamically -->
+                    <!-- Populated dynamically -->
                 </div>
             </div>
             
@@ -278,6 +298,16 @@
                         <div class="metric-unit">USD</div>
                     </div>
                 </div>
+                
+                <!-- NEW: Chart Container -->
+                <div class="chart-container">
+                    <h3>📊 All 16 Configurations: Cost vs Build Time</h3>
+                    <canvas id="configChart"></canvas>
+                    <p style="text-align: center; color: #666; font-size: 13px; margin-top: 15px;">
+                        ⭐ Star = Recommended configuration (best cost/performance balance)
+                    </p>
+                </div>
+                
                 <p style="text-align: center; color: #666; margin-top: 20px;">
                     💬 <strong>Ask the AI assistant</strong> about this recommendation →
                 </p>
@@ -304,14 +334,37 @@
             
             <div class="quick-questions" id="quick-questions" style="display: none;">
                 <div class="quick-q-title">💡 Quick Questions:</div>
+                
                 <button class="quick-btn" onclick="askQuestion('Why is my build time high?')">
                     ⏱️ Why is my build time high?
                 </button>
+                
+                <button class="quick-btn" onclick="askQuestion('How can I make it faster?')">
+                    ⚡ How can I make it faster?
+                </button>
+                
                 <button class="quick-btn" onclick="askQuestion('How can I reduce costs?')">
                     💰 How can I reduce costs?
                 </button>
+                
+                <button class="quick-btn" onclick="askQuestion('What if I use less RAM?')">
+                    💾 What if I use less RAM?
+                </button>
+                
                 <button class="quick-btn" onclick="askQuestion('Why did you recommend these specs?')">
                     ⚙️ Why these specs?
+                </button>
+                
+                <button class="quick-btn" onclick="askQuestion('Show me alternatives')">
+                    🔄 Show me alternatives
+                </button>
+                
+                <button class="quick-btn" onclick="askQuestion('Why might my build fail?')">
+                    ⚠️ Why might my build fail?
+                </button>
+                
+                <button class="quick-btn" onclick="askQuestion('What affects success rate?')">
+                    📊 What affects success rate?
                 </button>
             </div>
             
@@ -330,6 +383,8 @@
     </div>
     
     <script>
+        let configChart = null; // Store chart instance
+        
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
@@ -354,12 +409,8 @@
                 const data = await res.json();
                 
                 if (data.success) {
-                    // Show repository info
                     displayRepoInfo(data.repo_info);
-                    
-                    // Show recommendations
-                    showResults(data.recommendation.recommended);
-                    
+                    showResults(data.recommendation);
                     addBotMessage("✅ Analysis complete! I've analyzed the repository and generated recommendations. What would you like to know?");
                     document.getElementById('quick-questions').style.display = 'block';
                 } else {
@@ -423,7 +474,7 @@
                 const result = await res.json();
                 
                 if (result.success) {
-                    showResults(result.data.recommended);
+                    showResults(result.data);
                     addBotMessage("✅ Optimization complete! Ask me anything about these recommendations.");
                     document.getElementById('quick-questions').style.display = 'block';
                 }
@@ -434,12 +485,148 @@
             document.getElementById('loading').classList.remove('active');
         }
         
-        function showResults(rec) {
+        function showResults(data) {
+            const rec = data.recommended;
+            
+            // Update metrics
             document.getElementById('cpu').textContent = rec.cpu_cores;
             document.getElementById('mem').textContent = rec.memory_gb;
             document.getElementById('duration').textContent = rec.predicted_duration_min.toFixed(1);
             document.getElementById('cost').textContent = '$' + rec.estimated_cost_usd.toFixed(3);
+            
+            // Create chart
+            createConfigChart(data.all_options, rec);
+            
             document.getElementById('results').classList.add('active');
+        }
+        
+        function createConfigChart(allOptions, recommended) {
+            const ctx = document.getElementById('configChart');
+            if (!ctx) return;
+            
+            // Destroy existing chart
+            if (configChart) {
+                configChart.destroy();
+            }
+            
+            // Prepare data points
+            const otherPoints = [];
+            const recommendedPoint = [];
+            
+            allOptions.forEach(opt => {
+                const point = {
+                    x: opt.predicted_duration_min,
+                    y: opt.estimated_cost_usd,
+                    cpu: opt.cpu_cores,
+                    mem: opt.memory_gb,
+                    success: opt.success_probability
+                };
+                
+                if (opt.cpu_cores === recommended.cpu_cores && 
+                    opt.memory_gb === recommended.memory_gb) {
+                    recommendedPoint.push(point);
+                } else {
+                    otherPoints.push(point);
+                }
+            });
+            
+            // Create chart
+            configChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Other Configurations',
+                            data: otherPoints,
+                            backgroundColor: 'rgba(156, 163, 175, 0.6)',
+                            borderColor: 'rgba(107, 114, 128, 1)',
+                            borderWidth: 2,
+                            pointRadius: 8,
+                            pointHoverRadius: 10
+                        },
+                        {
+                            label: '⭐ Recommended (Optimal Balance)',
+                            data: recommendedPoint,
+                            backgroundColor: 'rgba(102, 126, 234, 0.9)',
+                            borderColor: 'rgba(79, 70, 229, 1)',
+                            borderWidth: 3,
+                            pointRadius: 15,
+                            pointHoverRadius: 18,
+                            pointStyle: 'star'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        title: {
+                            display: false
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: { size: 13 },
+                                padding: 15,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            callbacks: {
+                                title: function(context) {
+                                    const point = context[0].raw;
+                                    return `${point.cpu} cores, ${point.mem}GB RAM`;
+                                },
+                                label: function(context) {
+                                    return null; // Remove dataset label
+                                },
+                                afterLabel: function(context) {
+                                    const point = context.raw;
+                                    return [
+                                        `Build Time: ${point.x.toFixed(1)} min`,
+                                        `Cost: $${point.y.toFixed(3)}`,
+                                        `Success Rate: ${point.success.toFixed(1)}%`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: '⏱️ Build Time (minutes)',
+                                font: { size: 14, weight: 'bold' },
+                                padding: { top: 10 }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '💰 Cost per Build (USD)',
+                                font: { size: 14, weight: 'bold' },
+                                padding: { bottom: 10 }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
         
         async function sendMessage() {
